@@ -30,6 +30,6 @@ services:
     environment:
       - PYTHONUNBUFFERED=1  # Ensures real-time log output
     volumes:
-      - ./app:/app  # Mount the local app folder to the container
+      - ./app:./app  # Mount the local app folder to the container
 #    ports:
 #      - "5555:5555"  # If you expose a web service, adjust the port as necessary
