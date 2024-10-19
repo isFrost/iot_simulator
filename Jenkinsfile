@@ -3,7 +3,6 @@ pipeline{
 
     environment{
         DOCKER_COMPOSE_FILE = 'docker-compose.yml'
-        CONTAINER_NAME = 'iot_sim_1'
     }
 
     stages{
@@ -16,7 +15,7 @@ pipeline{
         stage('Build and Start Services'){
             steps{
                 script{
-                    sh 'docker-compose -f DOCKER_COMPOSE_FILE up --build -d'
+                    sh 'docker-compose -f ${DOCKER_COMPOSE_FILE} up --build -d'
                 }
             }
         }
