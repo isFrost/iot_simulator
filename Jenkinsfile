@@ -24,8 +24,7 @@ pipeline{
     post{
         always {
             script{
-                echo 'To delete the containers manually after testing, run the following command:'
-                echo 'docker-compose down'
+                echo 'To delete the containers manually after testing, run the following command:docker-compose down'
             }
         }
     }
