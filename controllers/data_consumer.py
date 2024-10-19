@@ -15,4 +15,4 @@ class DataConsumer:
 
     def print_data(self):
         for message in self.consumer:
-            print(message)
+            print(str(message))
