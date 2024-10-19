@@ -5,7 +5,7 @@ FROM python:3.12.3
 RUN apt-get update && apt-get install -y git
 
 # Set the working directory
-WORKDIR /app
+WORKDIR ./app
 
 # Copy requirements.txt first to leverage Docker layer caching
 COPY requirements.txt .
