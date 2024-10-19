@@ -14,9 +14,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code
-COPY sensors ./sensors
-COPY controllers ./controllers
-COPY main.py ./main.py
+COPY sensors ./app/sensors
+COPY controllers ./app/controllers
+COPY main.py ./app/main.py
 
 # Clone the project from GitHub (if necessary, replace with actual repo URL)
 # RUN git clone https://github.com/yourusername/yourproject.git .
