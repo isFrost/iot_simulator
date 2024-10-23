@@ -48,8 +48,8 @@ sensors = [
 ]
 
 controller = SensorController(sensors)
-controller.run_sensors()
-consumer = DataConsumer
-time.sleep(5)
-consumer.print_data()
-
+consumer = DataConsumer()
+while True:
+    controller.run_sensors()
+    time.sleep(3)
+    consumer.print_data()
