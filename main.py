@@ -52,4 +52,4 @@ consumer = DataConsumer()
 while True:
     controller.run_sensors()
     time.sleep(3)
-    consumer.print_data()
+    consumer.consume()

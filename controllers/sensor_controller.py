@@ -13,4 +13,4 @@ class SensorController:
     def run_sensors(self):
         for sensor in self.sensors:
             # print(sensor.generate_value())
-            self.producer.send('measurement', sensor.generate_value())
+            self.producer.send('climate', sensor.generate_value())

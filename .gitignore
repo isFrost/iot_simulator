@@ -2,3 +2,4 @@
 .venv
 /old
 .DS_Store
+test.py

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Micro Climate Monitoring</title>
+    <style>
+        body {
+            font-family: Verdana, sans-serif;
+        }
+        .room {
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .summary {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .room ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            max-height: 400px;
+            overflow-y: scroll;
+            box-shadow: rgba(0, 0, 0, 0.06) 0px 2px 4px 0px inset;
+        }
+        .room li {
+            padding: 5px;
+        }
+        .controls {
+            margin-top: 10px;
+        }
+        .controls button {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Micro-Climate Monitoring</h1>
+    <div id="messages-container">
+        <!-- Room divs will be dynamically populated here -->
+    </div>
+    <script>
+        const roomStatus = {}; // Stores whether each room is receiving data
+        const roomMessages = {}; // Stores messages for each room
+        const roomSummaries = {}; // Stores summaries for each room
+
+        async function fetchMessages() {
+            try {
+                const response = await fetch('/latest_messages');
+                const data = await response.json();
+
+                // Process messages and update data structures
+                data.messages.forEach(message => {
+                    const roomId = message.room;
+                    const measurement = message.measurement.toLowerCase();
+                    const sensorId = message.sensor;
+
+                    if (!roomMessages[roomId]) {
+                        roomMessages[roomId] = [];
+                        roomSummaries[roomId] = {};
+                        roomStatus[roomId] = { receiving: true }; // Default to receiving messages
+                    }
+
+                    // Only update data if receiving is enabled for the room
+                    if (roomStatus[roomId].receiving) {
+                        roomMessages[roomId].push(message);
+                        if (roomMessages[roomId].length > 200) {
+                            roomMessages[roomId].shift(); // Keep only latest 200 messages
+                        }
+
+                        if (!roomSummaries[roomId][measurement]) {
+                            roomSummaries[roomId][measurement] = {};
+                        }
+                        roomSummaries[roomId][measurement][sensorId] = message;
+                    }
+                });
+
+                // Update the DOM
+                const messagesContainer = document.getElementById('messages-container');
+
+                for (const roomId in roomMessages) {
+                    let roomDiv = document.getElementById(`room-${roomId}`);
+
+                    // If the room div doesn't exist, create it
+                    if (!roomDiv) {
+                        roomDiv = document.createElement('div');
+                        roomDiv.classList.add('room');
+                        roomDiv.id = `room-${roomId}`;
+
+                        const roomHeader = document.createElement('h2');
+                        roomHeader.textContent = `Room #${roomId}`;
+                        roomDiv.appendChild(roomHeader);
+
+                        const summaryDiv = document.createElement('div');
+                        summaryDiv.classList.add('summary');
+                        summaryDiv.id = `summary-${roomId}`;
+                        roomDiv.appendChild(summaryDiv);
+
+                        const messagesList = document.createElement('ul');
+                        messagesList.id = `messages-list-${roomId}`;
+                        roomDiv.appendChild(messagesList);
+
+                        // Controls for Start, Stop, and Export
+                        const controlsDiv = document.createElement('div');
+                        controlsDiv.classList.add('controls');
+
+                        const startButton = document.createElement('button');
+                        startButton.textContent = 'Start';
+                        startButton.onclick = () => {
+                            roomStatus[roomId].receiving = true;
+                        };
+
+                        const stopButton = document.createElement('button');
+                        stopButton.textContent = 'Stop';
+                        stopButton.onclick = () => {
+                            roomStatus[roomId].receiving = false;
+                        };
+
+                        const exportButton = document.createElement('button');
+                        exportButton.textContent = 'Export';
+                        exportButton.onclick = () => exportData(roomId);
+
+                        controlsDiv.appendChild(startButton);
+                        controlsDiv.appendChild(stopButton);
+                        controlsDiv.appendChild(exportButton);
+                        roomDiv.appendChild(controlsDiv);
+
+                        messagesContainer.appendChild(roomDiv);
+                    }
+
+                    // Update only if receiving is enabled for this room
+                    if (roomStatus[roomId].receiving) {
+                        // Update Summary
+                        const summaryDiv = document.getElementById(`summary-${roomId}`);
+                        summaryDiv.innerHTML = '';
+
+                        const requiredMeasurements = ["temperature", "atmospheric pressure", "air flow speed", "humidity", "illuminance"];
+                        requiredMeasurements.forEach(measurement => {
+                            if (roomSummaries[roomId][measurement]) {
+                                let sum = 0;
+                                let count = 0;
+                                let valuesList = [];
+
+                                for (const sensorId in roomSummaries[roomId][measurement]) {
+                                    const latestMessage = roomSummaries[roomId][measurement][sensorId];
+                                    sum += parseFloat(latestMessage.value);
+                                    valuesList.push(`${latestMessage.value} ${latestMessage.unit}`);
+                                    count += 1;
+                                }
+
+                                if (count > 0) {
+                                    const averageValue = (sum / count).toFixed(2);
+                                    const formattedValues = valuesList.join(', ');
+                                    const summaryText = document.createElement('p');
+                                    summaryText.textContent = `${measurement.charAt(0).toUpperCase() + measurement.slice(1)} (avg): ${averageValue} ${roomSummaries[roomId][measurement][Object.keys(roomSummaries[roomId][measurement])[0]].unit} [${formattedValues}]`;
+                                    summaryDiv.appendChild(summaryText);
+                                }
+                            }
+                        });
+
+                        // Update Messages List
+                        const messagesList = document.getElementById(`messages-list-${roomId}`);
+                        messagesList.innerHTML = '';
+                        roomMessages[roomId].forEach(message => {
+                            const listItem = document.createElement('li');
+                            const formattedMessage = `${message.timestamp}, ${message.measurement}, Room #${message.room}, Sensor #${message.sensor}, Status: ${message.status}, ${message.value} ${message.unit}`;
+                            listItem.textContent = formattedMessage;
+                            messagesList.appendChild(listItem);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching messages:', error);
+            }
+        }
+
+        function exportData(roomId) {
+            const messagesList = document.getElementById(`messages-list-${roomId}`);
+            let content = '';
+            messagesList.querySelectorAll('li').forEach(item => {
+                content += item.textContent + '\n';
+            });
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `room_${roomId}_data.txt`;
+            link.click();
+        }
+
+        setInterval(fetchMessages, 5000);
+        window.onload = fetchMessages;
+    </script>
+</body>
+</html>
