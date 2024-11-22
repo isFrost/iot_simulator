@@ -2,7 +2,10 @@
 FROM python:3.11.6
 
 # Set the working directory
-WORKDIR /flask-app
+WORKDIR ./db-consumer
+
+# RUN apt-get update && apt-get install -y python3
+RUN apt-get update && apt-get install -y python3 pip
 
 # Copy app files
 COPY . .
@@ -13,8 +16,5 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose port
-EXPOSE 5555
-
-# Start Flask app
-CMD ["python", "flask_app.py"]
+# Start consuming messages
+CMD ["python3", "consume.py"]

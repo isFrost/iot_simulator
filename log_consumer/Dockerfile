@@ -2,19 +2,16 @@
 FROM python:3.11.6
 
 # Set the working directory
-WORKDIR /flask-app
+WORKDIR /app
 
-# Copy app files
-COPY . .
-
-# Copy requirements.txt
+# Copy requirements.txt first to leverage Docker layer caching
 COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose port
-EXPOSE 5555
+# Copy the rest of the application code
+COPY . .
 
-# Start Flask app
-CMD ["python", "flask_app.py"]
+# Receive messages from Kafka
+CMD ["python", "consume.py"]
