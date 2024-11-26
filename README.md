@@ -141,13 +141,17 @@ cd iot_simulator
 1. Start the Docker containers
 
 ```commandline
-docker-compose up -d
+docker compose up -d
 ```
 
 2. Verify containers ar running
 
 ```commandline
-docker ps
+docker container ls
+```
+3. Stop container when the testing is done:
+```commandline
+    docker compose down
 ```
 
 ## Operation
@@ -157,12 +161,12 @@ All containers with data consuming application are configured so that they start
 To start the consumer container manually the below commnad can be used. It is applicable for consumer for flask app, consumer for database and consumer for logs.
 
 ```commandline
-docker exec -it <comtainer-name> python3 consume.py
+docker exec -it <consumer-container-name> python3 consume.py
 ```
 Data generating script is run manually. It can be done by the following command:
 
 ```commandline
-dokcer exev -it <container-name> python3 generate.py
+dokcer exev -it <producer-container-name> python3 generate.py
 ```
 
 When the script starts it will generate random values from pre-defined ranges every 5 seconds. To change the default set of simulated sensors updates should be done in sensors.json. It is located in data folder of data_producer app (/data_producer/data/sensors.json).
@@ -181,20 +185,26 @@ http://localhost:5555/messages
 
 The web page should display sensor data for each room in different tabs. The room tab should containt the latest average value for eahc climmate parameter folloved by the list of reading from all the sensors of the given parameter. Please see the example below:
 
-```
-
+```text
+Temperature (avg): 23.57 °C [22.78 °C, 25.93 °C, 21.99 °C]
 ```
 
 Below the caption with average values there should be a scrollable list of the latest 200 readings in the below format:
 
+```text
+2024-11-26 16:08:23.317879, Illuminance, Room #1, Sensor #28, Status: on, 589.51 lx
+2024-11-26 16:08:23.317968, Illuminance, Room #1, Sensor #29, Status: on, 665 lx
+2024-11-26 16:08:28.318820, Temperature, Room #1, Sensor #1, Status: on, 19.23 °C
+2024-11-26 16:08:28.319727, Temperature, Room #1, Sensor #2, Status: on, 19.9 °C
+2024-11-26 16:08:28.320490, Temperature, Room #1, Sensor #3, Status: on, 18.75 °C
+2024-11-26 16:08:28.327636, Humidity, Room #1, Sensor #12, Status: on, 44.06 %
+2024-11-26 16:08:28.328243, Humidity, Room #1, Sensor #13, Status: on, 56.12 %
 ```
-
-```
-Below the scrollable list of reading there are three buttuns: Start, Stop, Extract
+Below the scrollable list of reading there are three buttuns: Start, Stop, Export.
 
 * **Start** button resumes receiving micro-climate readings if it has been stopped for the given room before.
 * **Stop** button stops recceiving micro-climate readings for the fiven room.
-* **Extract** button downloads *.txt file with the current 200 lines of readings for the given room.
+* **Export** button downloads *.txt file with the current 200 lines of readings for the given room.
 
 ### Database App
 
@@ -203,7 +213,7 @@ Consumer script for DB app receives messages from Kafka broker, stores them in b
 1. Stored average values can be checked after 5 minutes of running the db consumer script. To check the values enter terminal in the PostgreSQL container:
 
 ```commandline
-docker exec -it <postgresql container> /bin/bash
+docker exec -it iot_simulator-postgres-1 /bin/bash
 ```
 
 2. Check the version of PostgreSQL installed in the container:
@@ -231,7 +241,7 @@ Consumer script for logging app receives messages from Kafka broker and stores t
 
 1. In a few minutes after the start of generation script open terminal in the log app container:
 ```commandline
-docker exec -it <logging app container> /bin/bash
+docker exec -it iot_simulator-log-consumer-1 /bin/bash
 ```
 2. Navigate to logs folder:
 ```commandline
@@ -247,6 +257,8 @@ cat datalog-1.txt
 ```
 
 ## Tests
+
+TBU
 
 ## Contributions
 
