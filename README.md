@@ -258,6 +258,24 @@ cat datalog-1.txt
 
 ## Tests
 
+Test Suit 1 - Kafka Producer Tests:
+
+[S1 Producer Tests](manual_tests/S1%20Producer%20Tests.csv)
+
+Test Suit 2 - Kafka Consumer Tests:
+
+TBU
+
+Test Suit 3 - Kafka Broker Tests:
+
+TBU
+
+Test Suit 4 - E2E Tests:
+
+TBU
+
+Test Suit 5 - Performance Tests:
+
 TBU
 
 ## Contributions
