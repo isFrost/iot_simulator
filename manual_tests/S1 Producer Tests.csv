@@ -1,0 +1,122 @@
+ID,Test,Instructions,Status,Comments
+T01-1,Publish to Topic: Ensure the topic exist,"1) Connect to Kafka container in terminal:
+docker exec -it <kafka-container-name> /bin/bash
+2) Use command to check the topic:
+kafka-topics --list --bootstrap-server localhost:9092",Passed,topic: climate
+T01-2,Publish to Topic:Confirm that the message is received,"1) Connect to Kafka container in terminal:
+docker exec -it <kafka-container-name> /bin/bash
+2) Produce message using Kafka CLI:
+kafka-console-producer --broker-list localhost:9092 --topic climate
+3) Enter a test message:
+{'timestamp': '2024-11-26 16:07:41.878452', 'sensor': 1, 'room': 1, 'status': 'on', 'measurement': 'Temperature', 'value': 24.03, 'unit': '°C'}
+4) Open another Terminal window
+5) Validate that message is received by the broker by consuming message using Kafka CLI:
+kafka-console-consumer --bootstrap-server localhost:9092 --topic climate --from-beginning",Passed,topic: climate
+T02-1,Partition Assignment: Check the number of partitions for the topic,"1) Connect to Kafka container in terminal:
+docker exec -it <kafka-container-name> /bin/bash
+2) Use the below command to validate the existing partitions:
+kafka-topics --describe --topic climate --bootstrap-server localhost:9092",Passed,topic: climate
+T02-2,Partition Assignment: Validate partitioning for messages with keys,"1) Connect to Kafka container in terminal:
+docker exec -it <kafka-container-name> /bin/bash
+2) Use Kafka's console producer to send messages:
+kafka-console-producer --broker-list localhost:9092 --topic climate --property ""parse.key=true"" --property ""key.separator=:""
+3) Send messages with keys:
+K1:{'timestamp': '2024-11-26 16:07:41.878452', 'sensor': 1, 'room': 1, 'status': 'on', 'measurement': 'Temperature', 'value': 24.03, 'unit': '°C'}
+K2:{'timestamp': '2024-11-26 16:07:41.878452', 'sensor': 2, 'room': 2, 'status': 'on', 'measurement': 'Temperature', 'value': 22.01, 'unit': '°C'}
+K3:{'timestamp': '2024-11-26 16:07:41.878452', 'sensor': 3, 'room': 3, 'status': 'on', 'measurement': 'Temperature', 'value': 19.02, 'unit': '°C'}
+4) Use the Kafka console consumer to display partition details:
+kafka-console-consumer --bootstrap-server localhost:9092 --topic climate --property print.key=true --property print.partition=true --from-beginning
+5) Verify that messages with the same key are assigned to the same partition",Passed,topic: climate
+T02-3,Partition Assignment: Validate partitioning for messages without keys,"1) Connect to Kafka container in terminal:
+docker exec -it <kafka-container-name> /bin/bash
+2) Use Kafka's console producer to send messages:
+kafka-console-producer --broker-list localhost:9092 --topic climate --property ""parse.key=true"" --property ""key.separator=:""
+3) Send messages without keys:
+{'timestamp': '2024-11-26 16:07:41.878452', 'sensor': 4, 'room': 4, 'status': 'on', 'measurement': 'Temperature', 'value': 21.03, 'unit': '°C'}
+{'timestamp': '2024-11-26 16:07:41.878452', 'sensor': 5, 'room': 5, 'status': 'of', 'measurement': 'Temperature', 'value': 'n/a', 'unit': '°C'}
+4) Use the Kafka console consumer to display partition details:
+kafka-console-consumer --bootstrap-server localhost:9092 --topic climate --property print.key=true --property print.partition=true --from-beginning
+5) Verify that messages without keys are distributed across partitions in a round-robin fashion.",Passed,"multiple partitions are not yet implemented
+topic: climate"
+T03-1,Kafka Availability: Validate producer behavior when Kafka brokers are down,"1) Connect to data producer container in terminal:
+docker exec -it <producer-container-name> /bin/bash
+2) Start data generation script
+python3 generate.py
+3) Open another Terminal window
+4) Use the Kafka console consumer to display consumed messages:
+kafka-console-consumer --bootstrap-server localhost:9092 --topic climate --from-beginning
+5) Open another Terminal window:
+6) Stop kafka container
+docker <kafka-container-name> stop
+7) Validate that data producer script handles kafka outage without crashes",Passed,topic: climate
+T03-2,Kafka Availability: Validate producer recovery when Kafka brokers go back online,"1) Connect to data producer container in terminal:
+docker exec -it <producer-container-name> /bin/bash
+2) Start data generation script
+python3 generate.py
+3) Open another Terminal window
+4) Use the Kafka console consumer to display consumed messages:
+kafka-console-consumer --bootstrap-server localhost:9092 --topic climate --from-beginning
+5) Open another Terminal window:
+6) Stop kafka container
+docker <kafka-container-name> stop
+7) Validate that message sending is put on-hold
+8) Restart kafka container
+9) Validate that messages produced during kafka outage are consumed",Passed,topic: climate
+T03-3,Kafka Availability: Validate producer behavior when Kafka partitionы are full,"1) Ensure the topic has limited retention or disk space by setting a low log.retention.bytes or log.segment.bytes for the topic:
+kafka-configs --bootstrap-server localhost:9092 --entity-type topics --entity-name test_topic --alter --add-config log.retention.bytes=1024
+2) Send large messages repeatedly to fill the partitions:
+kafka-console-producer --broker-list localhost:9092 --topic test_topic
+3) Enter message:
+{""key"": ""value"", ""data"": ""A"".repeat(1000)}  # Large payloads
+4) Once the partition reaches its configured size limit check if Kafka blocks new messages until older ones are deleted (depending on retention policy). 
+5) Check if the producer throws exceptions like ""RecordTooLargeException""
+6) Check Kafka logs 
+docker logs kafka",Out of Scope,topic: climate
+T04-4,Message Compression: Test if messages are correctly compressed when using gzip compression codec,"1) Connect to Kafka container in terminal:
+docker exec -it <kafka-container-name> /bin/bash
+2) Enable GZIP compression for the topic:
+kafka-configs --bootstrap-server localhost:9092 --entity-type topics --entity-name climate --alter --add-config compression.type=gzip
+3) Use the Kafka CLI or a custom producer script to send messages with compression
+kafka-console-producer --broker-list localhost:9092 --topic climate --producer-property compression.type=gzip
+2) Send a few messages:
+{'timestamp': '2024-11-26 16:07:41.878452', 'sensor': 7, 'room': 7, 'status': 'on', 'measurement': 'Temperature', 'value': 18.09, 'unit': '°C'}
+{'timestamp': '2024-11-26 16:07:41.878452', 'sensor': 8, 'room': 8, 'status': 'off', 'measurement': 'Temperature', 'value': 'n/a', 'unit': '°C'}
+{'timestamp': '2024-11-26 16:07:41.878452', 'sensor': 9, 'room': 9, 'status': 'on', 'measurement': 'Temperature', 'value': 23.15, 'unit': '°C'}
+3) Consume messages:
+kafka-console-consumer --bootstrap-server localhost:9092 --topic climate --from-beginning
+4) Verify Compression using kafka metrics. The messages should have ""compresscodec: gzip"" in log files:
+kafka-dump-log --files /var/lib/kafka/data/climate-0/00000000000000000000.log --print-data-log | grep ""compresscodec: gzip""",Passed,topic: climate
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,-,,,
+,-,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,-,,,

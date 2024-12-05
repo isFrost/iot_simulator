@@ -20,14 +20,23 @@ services:
     ports:
       - "9092:9092"
 
-  python-app:
+  data_producer:
     build:
-      context: .
+      context: ./data_producer
       dockerfile: Dockerfile
     depends_on:
       - kafka
     environment:
       - PYTHONUNBUFFERED=1  # Ensures real-time log output
+
+  flask-consumer:
+    build:
+      context: ./flask_consumer
+      dockerfile: Dockerfile
+    depends_on:
+      - data_producer
+    environment:
+      - PYTHONUNBUFFERED=1
 
   flask-app:
     build:
@@ -36,14 +45,28 @@ services:
     ports:
       - "5555:5555"
     depends_on:
-      - python-app
+      - data_producer
+      - flask-consumer
     environment:
       - FLASK_ENV=development
+
+  db-consumer:
+    build:
+      context: ./db_consumer
+      dockerfile: Dockerfile
+    depends_on:
+      - data_producer
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - PYTHONUNBUFFERED=1
 
   postgres:
     image: postgres:14-alpine
     ports:
       - "5432:5432"
+    depends_on:
+      - db-consumer
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -52,5 +75,18 @@ services:
       - POSTGRES_PASSWORD=S#cret123
       - POSTGRES_DB=sensordata
 
+  log-consumer:
+    build:
+      context: ./log_consumer
+      dockerfile: Dockerfile
+    depends_on:
+      - data_producer
+    environment:
+      - PYTHONUNBUFFERED=1
+
 volumes:
   postgres_data:
+
+networks:
+  default:
+    name: kafka-network

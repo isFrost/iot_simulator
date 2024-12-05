@@ -1,5 +1,5 @@
 .idea
 .venv
-/old
 .DS_Store
 test.py
+/log_consumer/logs/*
