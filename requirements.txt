@@ -1,0 +1,4 @@
+kafka-python
+six
+requests
+psycopg2-binary
